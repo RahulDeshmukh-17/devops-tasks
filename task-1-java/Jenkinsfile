@@ -63,28 +63,30 @@ pipeline {
                 }
             }
         }
-        stage('Upload JAR to Nexus') {
-            steps {
-                dir('task-1-java') {
-                    withCredentials([usernamePassword(
-                        credentialsId: 'nexus-credentials',
-                        usernameVariable: 'NEXUS_USER',
-                        passwordVariable: 'NEXUS_PASSWORD'
-                    )]) {
-                        bat '''
-                            curl.exe -f -u "%NEXUS_USER%:%NEXUS_PASSWORD%" ^
-                            -X POST "http://localhost:8081/service/rest/v1/components?repository=maven-releases" ^
-                            -F "maven2.groupId=com.example" ^
-                            -F "maven2.artifactId=task-1-java" ^
-                            -F "maven2.version=1.0.0" ^
-                            -F "maven2.generate-pom=true" ^
-                            -F "maven2.asset1=@target/task-1-java-1.0.0.jar" ^
-                            -F "maven2.asset1.extension=jar"
-                        '''
-                    }
-                }
+
+stage('Upload JAR to Nexus') {
+    steps {
+        dir('task-1-java') {
+            withCredentials([usernamePassword(
+                credentialsId: 'nexus-credentials',
+                usernameVariable: 'NEXUS_USER',
+                passwordVariable: 'NEXUS_PASSWORD'
+            )]) {
+                bat '''
+                    curl.exe -f -u "%NEXUS_USER%:%NEXUS_PASSWORD%" ^
+                      -X POST "http://localhost:8081/service/rest/v1/components?repository=maven-releases" ^
+                      -F "maven2.groupId=com.example" ^
+                      -F "maven2.artifactId=task-1-java" ^
+                      -F "maven2.version=1.0.0" ^
+                      -F "maven2.generate-pom=true" ^
+                      -F "maven2.asset1=@target/task-1-java-1.0.0.jar" ^
+                      -F "maven2.asset1.extension=jar"
+                '''
             }
         }
+    }
+}
+
 
         stage('Build Docker Image') {
             steps {
