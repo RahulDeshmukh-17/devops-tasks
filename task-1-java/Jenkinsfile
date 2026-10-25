@@ -9,7 +9,7 @@ pipeline {
     }
 
     environment {
-        DOCKER = 'C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe'
+        DOCKER = 'C:\Users\shree\AppData\Local\Programs\DockerDesktop\resources\bin\docker.exe'
         APP_NAME = 'task-1-java'
         IMAGE_TAG = "${BUILD_NUMBER}"
         MAVEN = 'C:\\tools\\apache-maven-3.9.16\\bin\\mvn.cmd'
