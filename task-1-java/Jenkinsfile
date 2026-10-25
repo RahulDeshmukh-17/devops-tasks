@@ -1,241 +1,3 @@
-//
-// pipeline {
-//     agent any
-//
-//     options {
-//         timestamps()
-//         disableConcurrentBuilds()
-//         buildDiscarder(logRotator(numToKeepStr: '10'))
-//     }
-//
-//     parameters {
-//         booleanParam(
-//             name: 'RUN_SONAR',
-//             defaultValue: false,
-//             description: 'Run SonarQube analysis and quality gate'
-//         )
-//         booleanParam(
-//             name: 'PUSH_IMAGES',
-//             defaultValue: false,
-//             description: 'Push Docker images to Nexus and JFrog'
-//         )
-//         booleanParam(
-//             name: 'UPDATE_GITOPS',
-//             defaultValue: false,
-//             description: 'Update the GitOps deployment repository'
-//         )
-//         booleanParam(
-//             name: 'RUN_PERFORMANCE_TESTS',
-//             defaultValue: false,
-//             description: 'Run the JMeter performance test plan'
-//         )
-//     }
-//
-//     environment {
-//         APP_NAME = 'task-1-java'
-//         IMAGE_TAG = "${BUILD_NUMBER}"
-//
-//         // Replace these example values before enabling registry pushes.
-//         NEXUS_REGISTRY = 'YOUR_NEXUS_HOST:PORT'
-//         JFROG_HOST = 'YOUR_COMPANY.jfrog.io'
-//         JFROG_REPOSITORY = 'docker-local'
-//
-//         SONAR_PROJECT_KEY = 'task-1-java'
-//
-//         // Replace with your real GitOps repository and manifest path.
-//         GITOPS_REPO_URL = 'https://github.com/YOUR_ORG/YOUR_GITOPS_REPO.git'
-//         GITOPS_BRANCH = 'main'
-//         GITOPS_MANIFEST = 'k8s/deployment.yaml'
-//     }
-//
-//     stages {
-//         stage('Checkout') {
-//             steps {
-//                 checkout scm
-//             }
-//         }
-//
-//         stage('Check Tools') {
-//             steps {
-//                 sh 'java -version'
-//                 sh 'mvn -version'
-//                 sh 'docker version'
-//                 sh 'git --version'
-//             }
-//         }
-//
-//         stage('Build and Test') {
-//             steps {
-//                 sh 'mvn -B clean verify'
-//             }
-//             post {
-//                 always {
-//                     junit allowEmptyResults: true,
-//                           testResults: '**/target/surefire-reports/*.xml'
-//                 }
-//             }
-//         }
-//
-//         stage('Performance Tests') {
-//             when {
-//                 expression { params.RUN_PERFORMANCE_TESTS }
-//             }
-//             steps {
-//                 sh '''
-//                     if [ ! -f tests/performance/test-plan.jmx ]; then
-//                         echo "Missing tests/performance/test-plan.jmx"
-//                         exit 1
-//                     fi
-//
-//                     jmeter -n \
-//                       -t tests/performance/test-plan.jmx \
-//                       -l target/performance-results.jtl
-//                 '''
-//             }
-//         }
-//
-//         stage('SonarQube Analysis') {
-//             when {
-//                 expression { params.RUN_SONAR }
-//             }
-//             steps {
-//                 withSonarQubeEnv('sonarqube-server') {
-//                     sh '''
-//                         mvn -B sonar:sonar \
-//                           -Dsonar.projectKey="$SONAR_PROJECT_KEY"
-//                     '''
-//                 }
-//             }
-//         }
-//
-//         stage('SonarQube Quality Gate') {
-//             when {
-//                 expression { params.RUN_SONAR }
-//             }
-//             steps {
-//                 timeout(time: 5, unit: 'MINUTES') {
-//                     waitForQualityGate abortPipeline: true
-//                 }
-//             }
-//         }
-//
-//         stage('Build Docker Image') {
-//             steps {
-//                 sh '''
-//                     docker build \
-//                       -t "$APP_NAME:$IMAGE_TAG" \
-//                       .
-//                 '''
-//             }
-//         }
-//
-//         stage('Push to Nexus') {
-//             when {
-//                 expression { params.PUSH_IMAGES }
-//             }
-//             steps {
-//                 withCredentials([
-//                     usernamePassword(
-//                         credentialsId: 'nexus-docker-creds',
-//                         usernameVariable: 'NEXUS_USER',
-//                         passwordVariable: 'NEXUS_PASSWORD'
-//                     )
-//                 ]) {
-//                     sh '''
-//                         echo "$NEXUS_PASSWORD" |
-//                           docker login "$NEXUS_REGISTRY" \
-//                             --username "$NEXUS_USER" \
-//                             --password-stdin
-//
-//                         docker tag "$APP_NAME:$IMAGE_TAG" \
-//                           "$NEXUS_REGISTRY/$APP_NAME:$IMAGE_TAG"
-//
-//                         docker push "$NEXUS_REGISTRY/$APP_NAME:$IMAGE_TAG"
-//
-//                         docker logout "$NEXUS_REGISTRY"
-//                     '''
-//                 }
-//             }
-//         }
-//
-//         stage('Push to JFrog') {
-//             when {
-//                 expression { params.PUSH_IMAGES }
-//             }
-//             steps {
-//                 withCredentials([
-//                     usernamePassword(
-//                         credentialsId: 'jfrog-docker-creds',
-//                         usernameVariable: 'JFROG_USER',
-//                         passwordVariable: 'JFROG_PASSWORD'
-//                     )
-//                 ]) {
-//                     sh '''
-//                         echo "$JFROG_PASSWORD" |
-//                           docker login "$JFROG_HOST" \
-//                             --username "$JFROG_USER" \
-//                             --password-stdin
-//
-//                         docker tag "$APP_NAME:$IMAGE_TAG" \
-//                           "$JFROG_HOST/$JFROG_REPOSITORY/$APP_NAME:$IMAGE_TAG"
-//
-//                         docker push \
-//                           "$JFROG_HOST/$JFROG_REPOSITORY/$APP_NAME:$IMAGE_TAG"
-//
-//                         docker logout "$JFROG_HOST"
-//                     '''
-//                 }
-//             }
-//         }
-//
-//         stage('Update GitOps Repository') {
-//             when {
-//                 expression { params.UPDATE_GITOPS }
-//             }
-//             steps {
-//                 dir('gitops') {
-//                     git branch: "${GITOPS_BRANCH}",
-//                         credentialsId: 'gitops-repo-creds',
-//                         url: "${GITOPS_REPO_URL}"
-//
-//                     sh '''
-//                         test -f "$GITOPS_MANIFEST"
-//
-//                         sed -i \
-//                           "s#image: .*task-1-java.*#image: $NEXUS_REGISTRY/$APP_NAME:$IMAGE_TAG#" \
-//                           "$GITOPS_MANIFEST"
-//
-//                         git config user.name "Jenkins"
-//                         git config user.email "jenkins@example.com"
-//
-//                         git add "$GITOPS_MANIFEST"
-//
-//                         if ! git diff --cached --quiet; then
-//                             git commit -m "Update task-1-java image to $IMAGE_TAG"
-//                             git push origin "HEAD:$GITOPS_BRANCH"
-//                         else
-//                             echo "No GitOps changes to commit."
-//                         fi
-//                     '''
-//                 }
-//             }
-//         }
-//     }
-//
-//     post {
-//         success {
-//             echo 'Task 1 pipeline completed successfully.'
-//         }
-//         failure {
-//             echo 'Pipeline failed. Check the stage logs.'
-//         }
-//         always {
-//             archiveArtifacts artifacts: 'target/*.jar,target/*.jtl',
-//                              allowEmptyArchive: true
-//         }
-//     }
-// }
-//
 
 pipeline {
     agent any
@@ -249,6 +11,7 @@ pipeline {
     environment {
         APP_NAME = 'task-1-java'
         IMAGE_TAG = "${BUILD_NUMBER}"
+        MAVEN = 'C:\\tools\\apache-maven-3.9.16\\bin\\mvn.cmd'
     }
 
     stages {
@@ -261,7 +24,7 @@ pipeline {
         stage('Check Tools') {
             steps {
                 bat 'java -version'
-                bat 'mvn -version'
+                bat '"%MAVEN%" -version'
                 bat 'docker version'
                 bat 'git --version'
             }
@@ -269,19 +32,23 @@ pipeline {
 
         stage('Build and Unit Test') {
             steps {
-                bat 'mvn -B clean verify'
+                dir('task-1-java') {
+                    bat '"%MAVEN%" -B clean verify'
+                }
             }
             post {
                 always {
                     junit allowEmptyResults: true,
-                          testResults: '**/target/surefire-reports/*.xml'
+                          testResults: 'task-1-java/target/surefire-reports/*.xml'
                 }
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                bat 'docker build -t %APP_NAME%:%IMAGE_TAG% .'
+                dir('task-1-java') {
+                    bat 'docker build -t %APP_NAME%:%IMAGE_TAG% .'
+                }
             }
         }
 
@@ -294,10 +61,14 @@ pipeline {
 
     post {
         success {
-            echo 'Java build, tests, and Docker run completed successfully.'
+            echo 'Java build, tests, and Docker build/run completed successfully.'
         }
         failure {
-            echo 'Pipeline failed. Check the stage logs.'
+            echo 'Pipeline failed. Check the failed stage in Console Output.'
+        }
+        always {
+            archiveArtifacts artifacts: 'task-1-java/target/*.jar',
+                             allowEmptyArchive: true
         }
     }
 }
