@@ -48,14 +48,14 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 dir('task-1-java') {
-                    bat 'docker build -t %APP_NAME%:%IMAGE_TAG% .'
+                    bat '"%DOCKER%" build -t %APP_NAME%:%IMAGE_TAG% .'
                 }
             }
         }
 
         stage('Run Docker Container') {
             steps {
-                bat 'docker run --rm %APP_NAME%:%IMAGE_TAG%'
+                bat '"%DOCKER%" run --rm %APP_NAME%:%IMAGE_TAG%'
             }
         }
     }
