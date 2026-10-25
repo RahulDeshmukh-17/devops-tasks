@@ -9,6 +9,7 @@ pipeline {
     }
 
     environment {
+        DOCKER = 'C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe'
         APP_NAME = 'task-1-java'
         IMAGE_TAG = "${BUILD_NUMBER}"
         MAVEN = 'C:\\tools\\apache-maven-3.9.16\\bin\\mvn.cmd'
@@ -25,7 +26,7 @@ pipeline {
             steps {
                 bat 'java -version'
                 bat '"%MAVEN%" -version'
-                bat 'docker version'
+                bat '"%DOCKER%" version'
                 bat 'git --version'
             }
         }
