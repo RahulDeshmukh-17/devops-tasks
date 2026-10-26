@@ -480,33 +480,54 @@ pipeline {
                 bat '"%DOCKER%" run --rm %APP_NAME%:%IMAGE_TAG%'
             }
         }
-
-        stage('Push Docker Image to Nexus') {
+stage('Push Docker Image to Nexus') {
             steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'nexus-docker-creds',
-                        usernameVariable: 'NEXUS_DOCKER_USER',
-                        passwordVariable: 'NEXUS_DOCKER_PASSWORD'
-                    )
-                ]) {
-                    powershell '''
-                        $ErrorActionPreference = "Stop"
-                        $password = $env:NEXUS_DOCKER_PASSWORD
-                        $password | & $env:DOCKER login $env:NEXUS_REGISTRY --username $env:NEXUS_DOCKER_USER --password-stdin
-                        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+                withCredentials([usernamePassword(
+                    credentialsId: 'nexus-docker-creds',
+                    usernameVariable: 'NEXUS_DOCKER_USER',
+                    passwordVariable: 'NEXUS_DOCKER_PASSWORD'
+                )]) {
+                    bat '''
+                        "%DOCKER%" login %NEXUS_REGISTRY% -u "%NEXUS_DOCKER_USER%" -p "%NEXUS_DOCKER_PASSWORD%"
+                        if errorlevel 1 exit /b 1
 
-                        & $env:DOCKER tag "$env:APP_NAME`:$env:IMAGE_TAG" "$env:NEXUS_REGISTRY/$env:APP_NAME`:$env:IMAGE_TAG"
-                        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+                        "%DOCKER%" tag %APP_NAME%:%IMAGE_TAG% %NEXUS_REGISTRY%/%APP_NAME%:%IMAGE_TAG%
+                        if errorlevel 1 exit /b 1
 
-                        & $env:DOCKER push "$env:NEXUS_REGISTRY/$env:APP_NAME`:$env:IMAGE_TAG"
-                        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+                        "%DOCKER%" push %NEXUS_REGISTRY%/%APP_NAME%:%IMAGE_TAG%
+                        if errorlevel 1 exit /b 1
 
-                        & $env:DOCKER logout $env:NEXUS_REGISTRY
+                        "%DOCKER%" logout %NEXUS_REGISTRY%
                     '''
                 }
             }
         }
+//         stage('Push Docker Image to Nexus') {
+//             steps {
+//                 withCredentials([
+//                     usernamePassword(
+//                         credentialsId: 'nexus-credentials',
+//                         usernameVariable: 'NEXUS_USER',
+//                         passwordVariable: 'NEXUS_PASSWORD'
+//                     )
+//                 ]) {
+//                     powershell '''
+//                         $ErrorActionPreference = "Stop"
+//                         $password = $env:NEXUS_DOCKER_PASSWORD
+//                         $password | & $env:DOCKER login $env:NEXUS_REGISTRY --username $env:NEXUS_DOCKER_USER --password-stdin
+//                         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+//
+//                         & $env:DOCKER tag "$env:APP_NAME`:$env:IMAGE_TAG" "$env:NEXUS_REGISTRY/$env:APP_NAME`:$env:IMAGE_TAG"
+//                         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+//
+//                         & $env:DOCKER push "$env:NEXUS_REGISTRY/$env:APP_NAME`:$env:IMAGE_TAG"
+//                         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+//
+//                         & $env:DOCKER logout $env:NEXUS_REGISTRY
+//                     '''
+//                 }
+//             }
+//         }
     }
 
     post {
