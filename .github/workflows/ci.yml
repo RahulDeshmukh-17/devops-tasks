@@ -1,43 +1,63 @@
 name: Java CI and Container Publish
+
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
+
 permissions:
   contents: read
+
 jobs:
   build-test-scan-publish:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-java@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '17'
           cache: maven
+          cache-dependency-path: task-1-java/pom.xml
+
       - name: Build and test
+        working-directory: task-1-java
         run: mvn -B clean verify
+
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: surefire-reports
-          path: '**/target/surefire-reports/*.xml'
+          name: java-test-reports
+          path: task-1-java/target/surefire-reports/*.xml
           if-no-files-found: warn
+
       - name: SonarQube analysis
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        working-directory: task-1-java
         env:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
-        run: mvn -B sonar:sonar -Dsonar.host.url="$SONAR_HOST_URL" -Dsonar.token="$SONAR_TOKEN" -Dsonar.projectKey="$SONAR_PROJECT_KEY"
-      - name: Docker build
+        run: |
+          mvn -B sonar:sonar \
+            -Dsonar.host.url="$SONAR_HOST_URL" \
+            -Dsonar.token="$SONAR_TOKEN" \
+            -Dsonar.projectKey="$SONAR_PROJECT_KEY"
+
+      - name: Build Docker image
+        working-directory: task-1-java
         run: docker build --pull -t devops-java-app:${GITHUB_SHA::12} .
-      - name: Push to Nexus
+
+      - name: Push image to Nexus
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           REGISTRY: ${{ vars.NEXUS_REGISTRY }}
@@ -49,7 +69,8 @@ jobs:
           docker tag devops-java-app:${GITHUB_SHA::12} "$REGISTRY/devops-java-app:${GITHUB_SHA::12}"
           docker push "$REGISTRY/devops-java-app:${GITHUB_SHA::12}"
           docker logout "$REGISTRY"
-      - name: Push to JFrog
+
+      - name: Push image to JFrog
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           REGISTRY: ${{ vars.JFROG_REGISTRY }}

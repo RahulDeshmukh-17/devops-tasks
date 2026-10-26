@@ -1,4 +1,4 @@
+target/
+.sonar/
 .idea/
-**/target/
-*.log
-.env
+target/
