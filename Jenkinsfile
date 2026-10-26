@@ -36,7 +36,7 @@
 // // //                 dir('task-1-java') {
 // // //                     withCredentials([string(
 // // //                         credentialsId: 'sonarcloud-token',
-// // //                         variable: 'SONAR_TOKEN'
+// // //                         variable: 'sonarcloud-token'
 // // //                     )]) {
 // // //                         bat '''
 // // //                             "%MAVEN%" -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar ^
@@ -155,13 +155,13 @@
 // //
 // // stage('SonarCloud Analysis') {
 // //     steps {
-// //         withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
+// //         withCredentials([string(credentialsId: 'sonarcloud-token', variable: 'sonarcloud-token')]) {
 // //             bat '''
 // //                 "C:\\tools\\apache-maven-3.9.16\\bin\\mvn.cmd" -B clean verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar ^
 // //                 -Dsonar.host.url=https://sonarcloud.io ^
 // //                 -Dsonar.organization=rahuldeshmukh-17 ^
 // //                 -Dsonar.projectKey=RahulDeshmukh-17_devops-tasks ^
-// //                 -Dsonar.token=%SONAR_TOKEN%
+// //                 -Dsonar.token=%sonarcloud-token%
 // //             '''
 // //         }
 // //     }
@@ -294,14 +294,14 @@
 //         stage('SonarCloud Analysis') {
 //             steps {
 //                 withCredentials([
-//                     string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')
+//                     string(credentialsId: 'sonarcloud-token', variable: 'sonarcloud-token')
 //                 ]) {
 //                     bat '''
 //                         "%MAVEN%" -B clean verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar ^
 //                         -Dsonar.host.url=https://sonarcloud.io ^
 //                         -Dsonar.organization=rahuldeshmukh-17 ^
 //                         -Dsonar.projectKey=RahulDeshmukh-17_devops-tasks ^
-//                         -Dsonar.token=%SONAR_TOKEN%
+//                         -Dsonar.token=%sonarcloud-token%
 //                     '''
 //                 }
 //             }
@@ -421,14 +421,14 @@ pipeline {
         stage('SonarCloud Analysis') {
             steps {
                 withCredentials([
-                    string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')
+                    string(credentialsId: 'sonarcloud-token', variable: 'sonarcloud-token')
                 ]) {
                     bat '''
                         "%MAVEN%" -B clean verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar ^
                         -Dsonar.host.url=https://sonarcloud.io ^
                         -Dsonar.organization=rahuldeshmukh-17 ^
                         -Dsonar.projectKey=RahulDeshmukh-17_devops-tasks ^
-                        -Dsonar.token=%SONAR_TOKEN%
+                        -Dsonar.token=%sonarcloud-token%
                     '''
                 }
             }
