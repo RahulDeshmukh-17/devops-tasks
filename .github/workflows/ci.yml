@@ -84,13 +84,14 @@ jobs:
         if: github.event_name != 'pull_request'
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
           SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
           SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
+          SONAR_HOST_URL: https://sonarcloud.io
         run: |
           args=(
             "-Dsonar.projectKey=$SONAR_PROJECT_KEY"
             "-Dsonar.host.url=$SONAR_HOST_URL"
+            "-Dsonar.organization="$SONAR_ORGANIZATION"
             "-Dsonar.token=$SONAR_TOKEN"
           )
 
