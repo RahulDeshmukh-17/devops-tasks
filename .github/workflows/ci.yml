@@ -53,9 +53,7 @@ jobs:
             throw "Maven is not available."
           }
 
-          if (-not (Test-Path $env:DOCKER_EXE)) {
-            throw "Docker CLI was not found at $env:DOCKER_EXE. Update DOCKER_EXE to the path returned by 'where.exe docker' on this PC."
-          }
+          
           & $env:DOCKER_EXE --version
           if ($LASTEXITCODE -ne 0) {
             throw "Docker CLI could not run."
