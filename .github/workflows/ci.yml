@@ -1,4 +1,102 @@
-name: Java CI and Publish to Nexus
+#name: Java CI and Publish to Nexus
+#
+#on:
+#  push:
+#    branches: [main]
+#  pull_request:
+#    branches: [main]
+#  workflow_dispatch:
+#
+#permissions:
+#  contents: read
+#
+#jobs:
+#  build-test-scan-publish:
+#    # This job needs access to your local Nexus and Docker Desktop.
+#    runs-on: self-hosted
+#
+#    defaults:
+#      run:
+#        shell: powershell -ExecutionPolicy Bypass -File {0}
+#
+#    env:
+#      MAVEN_CMD: C:\tools\apache-maven-3.9.16\bin\mvn.cmd
+#      DOCKER_EXE: C:\Users\shree\AppData\Local\Programs\DockerDesktop\resources\bin\docker.exe
+#
+#    steps:
+#      - name: Checkout repository
+#        uses: actions/checkout@v4
+#
+#      - name: Set up Java 17
+#        uses: actions/setup-java@v5
+#        with:
+#          distribution: temurin
+#          java-version: '17'
+#          cache: maven
+#          cache-dependency-path: pom.xml
+#          server-id: nexus
+#          server-username: NEXUS_USERNAME
+#          server-password: NEXUS_PASSWORD
+#
+#      - name: Verify Java, Maven, and Docker
+#        run: |
+#          java -version
+#          if ($LASTEXITCODE -ne 0) {
+#            throw "Java setup failed."
+#          }
+#
+#          if (-not (Test-Path $env:MAVEN_CMD)) {
+#            throw "Maven was not found at $env:MAVEN_CMD."
+#          }
+#          & $env:MAVEN_CMD -version
+#          if ($LASTEXITCODE -ne 0) {
+#            throw "Maven is not available."
+#          }
+#
+#          if (-not (Test-Path $env:DOCKER_EXE)) {
+#            throw "Docker CLI was not found at $env:DOCKER_EXE. Update DOCKER_EXE to the path returned by 'where.exe docker' on this PC."
+#          }
+#          & $env:DOCKER_EXE --version
+#          if ($LASTEXITCODE -ne 0) {
+#            throw "Docker CLI could not run."
+#          }
+#
+#          & $env:DOCKER_EXE info
+#          if ($LASTEXITCODE -ne 0) {
+#            throw "Docker CLI is installed, but the runner account cannot connect to the Docker engine. Run the runner as the same Windows user that runs Docker Desktop, or configure Docker access for the runner service."
+#          }
+#
+#      - name: Build and run unit tests
+#        run: |
+#          & $env:MAVEN_CMD -B clean verify
+#          if ($LASTEXITCODE -ne 0) {
+#            throw "Maven build or unit tests failed."
+#          }
+#
+#      - name: Upload test reports
+#        if: always()
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: java-test-reports
+#          path: target/surefire-reports/*.xml
+#          if-no-files-found: warn
+#
+#      - name: SonarCloud analysis
+#        if: github.event_name != 'pull_request'
+#        env:
+#          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+#          SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
+#          SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
+#        run: |
+#          if ([string]::IsNullOrWhiteSpace($env:SONAR_TOKEN) -or
+#              [string]::IsNullOrWhiteSpace($env:SONAR_PROJECT_KEY) -or
+#              [string]::IsNullOrWhiteSpace($env:SONAR_ORGANIZATION)) {
+#            throw "One or more SonarCloud secrets are missing: SONAR_TOKEN, SONAR_PROJECT_KEY, SONAR_ORGANIZATION."
+#          }
+
+
+
+name: Task 6 - Java CI
 
 on:
   push:
@@ -11,83 +109,42 @@ permissions:
   contents: read
 
 jobs:
-  build-test-scan-publish:
-    # This job needs access to your local Nexus and Docker Desktop.
-    runs-on: self-hosted
-
-    defaults:
-      run:
-        shell: powershell -ExecutionPolicy Bypass -File {0}
-
-    env:
-      MAVEN_CMD: C:\tools\apache-maven-3.9.16\bin\mvn.cmd
-      DOCKER_EXE: C:\Users\shree\AppData\Local\Programs\DockerDesktop\resources\bin\docker.exe
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Java 17
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
           cache: maven
-          cache-dependency-path: pom.xml
-          server-id: nexus
-          server-username: NEXUS_USERNAME
-          server-password: NEXUS_PASSWORD
 
-      - name: Verify Java, Maven, and Docker
+      - name: Verify Java and Maven
         run: |
           java -version
-          if ($LASTEXITCODE -ne 0) {
-            throw "Java setup failed."
-          }
+          mvn -version
 
-          if (-not (Test-Path $env:MAVEN_CMD)) {
-            throw "Maven was not found at $env:MAVEN_CMD."
-          }
-          & $env:MAVEN_CMD -version
-          if ($LASTEXITCODE -ne 0) {
-            throw "Maven is not available."
-          }
-
-          
-          & $env:DOCKER_EXE --version
-          if ($LASTEXITCODE -ne 0) {
-            throw "Docker CLI could not run."
-          }
-
-          & $env:DOCKER_EXE info
-          if ($LASTEXITCODE -ne 0) {
-            throw "Docker CLI is installed, but the runner account cannot connect to the Docker engine. Run the runner as the same Windows user that runs Docker Desktop, or configure Docker access for the runner service."
-          }
-
-      - name: Build and run unit tests
-        run: |
-          & $env:MAVEN_CMD -B clean verify
-          if ($LASTEXITCODE -ne 0) {
-            throw "Maven build or unit tests failed."
-          }
+      - name: Build and run tests
+        run: mvn -B clean verify
 
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: java-test-reports
-          path: target/surefire-reports/*.xml
-          if-no-files-found: warn
+          name: test-reports
+          path: '**/target/surefire-reports/*.xml'
+          if-no-files-found: ignore
 
-      - name: SonarCloud analysis
-        if: github.event_name != 'pull_request'
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
-          SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
-        run: |
-          if ([string]::IsNullOrWhiteSpace($env:SONAR_TOKEN) -or
-              [string]::IsNullOrWhiteSpace($env:SONAR_PROJECT_KEY) -or
-              [string]::IsNullOrWhiteSpace($env:SONAR_ORGANIZATION)) {
-            throw "One or more SonarCloud secrets are missing: SONAR_TOKEN, SONAR_PROJECT_KEY, SONAR_ORGANIZATION."
-          }
+      - name: Upload Java build output
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: java-build
+          path: '**/target/*.jar'
+          if-no-files-found: error
+
