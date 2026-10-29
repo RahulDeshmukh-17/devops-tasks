@@ -91,7 +91,7 @@ jobs:
           args=(
             "-Dsonar.projectKey=$SONAR_PROJECT_KEY"
             "-Dsonar.host.url=$SONAR_HOST_URL"
-            "-Dsonar.organization="$SONAR_ORGANIZATION"
+            "-Dsonar.organization=$SONAR_ORGANIZATION"
             "-Dsonar.token=$SONAR_TOKEN"
           )
 
