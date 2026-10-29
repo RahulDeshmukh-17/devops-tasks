@@ -95,6 +95,7 @@ jobs:
             "-Dsonar.token=$SONAR_TOKEN"
           )
 
+
           if [[ -n "$SONAR_ORGANIZATION" ]]; then
             args+=("-Dsonar.organization=$SONAR_ORGANIZATION")
           fi
